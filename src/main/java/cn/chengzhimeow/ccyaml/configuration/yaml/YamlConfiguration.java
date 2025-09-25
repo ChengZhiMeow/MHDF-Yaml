@@ -215,7 +215,7 @@ public class YamlConfiguration extends MemoryConfiguration {
      * @param comments CommentLine 列表
      * @return 字符串注释列表
      */
-    private @NotNull List<String> getCommentLines(@NotNull List<CommentLine> comments) {
+    private @NotNull List<String> getCommentLines(List<CommentLine> comments) {
         if (this.isNotNullAndEmpty(comments)) return new ArrayList<>();
 
         List<String> lines = new ArrayList<>();
@@ -246,7 +246,7 @@ public class YamlConfiguration extends MemoryConfiguration {
                     null,
                     null,
                     comment == null ? "" : " " + comment,
-                    commentType
+                    comment == null ? CommentType.BLANK_LINE : commentType
             ));
         }
         return lines;
@@ -282,7 +282,6 @@ public class YamlConfiguration extends MemoryConfiguration {
             if (valueNode instanceof MappingNode || valueNode instanceof SequenceNode)
                 sectionData.setInlineCommentList(this.getCommentLines(tuple.getKeyNode().getInLineComments()));
             else sectionData.setInlineCommentList(this.getCommentLines(valueNode.getInLineComments()));
-
 
             map.put(keyString, sectionData);
         }
