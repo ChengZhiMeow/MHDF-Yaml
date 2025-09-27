@@ -11,6 +11,13 @@ import java.util.Set;
 @SuppressWarnings("unused")
 public interface ConfigurationSection {
     /**
+     * 获取当前节点完整数据
+     *
+     * @return 节点完整数据
+     */
+    @NotNull SectionData getData();
+
+    /**
      * 获取当前节点的完整路径键
      *
      * @param path 相对路径

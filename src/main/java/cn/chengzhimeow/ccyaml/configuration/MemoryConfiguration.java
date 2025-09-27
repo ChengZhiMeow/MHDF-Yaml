@@ -78,6 +78,11 @@ public class MemoryConfiguration implements ConfigurationSection {
         return set;
     }
 
+    @Override
+    public @NotNull SectionData getData() {
+        return this.data;
+    }
+
     /**
      * 获取当前节点的完整路径键
      *
@@ -90,13 +95,6 @@ public class MemoryConfiguration implements ConfigurationSection {
         return this.path + "." + path;
     }
 
-    /**
-     * 设定指定路径的值
-     * 如果路径中的父节点不存在, 会自动创建
-     *
-     * @param path  值的路径, 使用 '.' 分隔
-     * @param value 要设定的值, 如果为 null 则会移除该键
-     */
     @Override
     public void set(@NotNull String path, @Nullable Object value) {
         String[] keys = path.split("\\.");
@@ -133,12 +131,6 @@ public class MemoryConfiguration implements ConfigurationSection {
         }
     }
 
-    /**
-     * 获取指定路径的 SectionData 对象
-     *
-     * @param path 值的路径, 使用 '.' 分隔
-     * @return 包含数据和注释的 SectionData 对象, 如果路径不存在则返回一个空的 SectionData
-     */
     @Override
     public @NotNull SectionData getSectionData(String path) {
         String[] keys = path.split("\\.");
@@ -159,12 +151,6 @@ public class MemoryConfiguration implements ConfigurationSection {
         return sectionData != null ? sectionData : new SectionData();
     }
 
-    /**
-     * 获取当前配置节点下的所有键
-     *
-     * @param deep 是否深度获取 (即包含所有子节点的键, 以 '.' 分隔)
-     * @return 键的集合
-     */
     @Override
     public @NotNull Set<String> getKeys(boolean deep) {
         // noinspection unchecked
