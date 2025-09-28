@@ -92,9 +92,12 @@ public interface ConfigurationSection {
     default @Nullable <T> T get(@NotNull String path, @NotNull Class<T> clazz) {
         Object data = this.getSectionData(path).getData();
         if (data == null) return null;
-        else if (data instanceof StringSectionData str && clazz == String.class) data = str.getValue();
-        else if (!(data instanceof String) && clazz == String.class) data = data.toString();
-        return clazz.cast(data);
+        else if (clazz == String.class) {
+            if (data instanceof StringSectionData str) data = str.getValue();
+            else if (!(data instanceof String)) data = data.toString();
+        }
+        // noinspection unchecked
+        return (T) data;
     }
 
     /**
