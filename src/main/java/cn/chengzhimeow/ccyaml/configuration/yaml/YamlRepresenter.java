@@ -24,6 +24,7 @@ public class YamlRepresenter extends Representer {
     public YamlRepresenter(DumperOptions options) {
         super(options);
         this.representers.put(YamlStringSectionData.class, new StringSectionDataRepresenter(this));
+
         this.representers.put(ConfigurationSection.class, new ConfigurationSectionRepresenter(this));
         this.representers.put(MemoryConfiguration.class, new ConfigurationSectionRepresenter(this));
         this.representers.put(YamlConfiguration.class, new ConfigurationSectionRepresenter(this));
