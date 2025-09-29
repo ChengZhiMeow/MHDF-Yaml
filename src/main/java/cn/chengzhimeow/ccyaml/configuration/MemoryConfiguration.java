@@ -122,8 +122,8 @@ public class MemoryConfiguration implements ConfigurationSection {
             SectionData data = Objects.requireNonNull(currentMap).get(finalKey);
             if (data == null) data = new SectionData();
 
-            // 如果值是 Map, 递归转换为 SectionData
-            if (value instanceof Map) // noinspection unchecked
+            if (value instanceof ConfigurationSection section) data = section.getData();
+            else if (value instanceof Map) // noinspection unchecked
                 data.setData(SectionData.fromMap((Map<Object, Object>) value).getData());
             else data.setData(value);
 
