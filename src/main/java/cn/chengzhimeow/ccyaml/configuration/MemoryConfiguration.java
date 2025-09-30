@@ -8,9 +8,7 @@ import java.util.*;
 
 @SuppressWarnings("unused")
 public class MemoryConfiguration implements ConfigurationSection {
-    @Getter
     private final @Nullable ConfigurationSection parent;
-    @Getter
     private final @Nullable String path;
 
     protected @NotNull SectionData data = new SectionData(new LinkedHashMap<String, SectionData>());
@@ -62,7 +60,7 @@ public class MemoryConfiguration implements ConfigurationSection {
      * @param map 要扫描的 Map
      * @return 所有键的集合
      */
-    public static @NotNull Set<String> getKeys(@NotNull Map<String, ?> map) {
+    private static @NotNull Set<String> getKeys(@NotNull Map<String, ?> map) {
         Set<String> set = new HashSet<>();
 
         for (Map.Entry<String, ?> entry : map.entrySet()) {
@@ -76,6 +74,14 @@ public class MemoryConfiguration implements ConfigurationSection {
         }
 
         return set;
+    }
+
+    public @Nullable ConfigurationSection getParent() {
+        return parent;
+    }
+
+    public @Nullable String getPath() {
+        return this.path;
     }
 
     @Override
