@@ -11,6 +11,20 @@ import java.util.Set;
 @SuppressWarnings("unused")
 public interface ConfigurationSection {
     /**
+     * 获取当前节点夫配置实例
+     *
+     * @return 节点夫配置实例
+     */
+    @Nullable ConfigurationSection getParent();
+
+    /**
+     * 获取当前节点完整路径
+     *
+     * @return 节点完整路径
+     */
+    @Nullable String getPath();
+
+    /**
      * 获取当前节点完整数据
      *
      * @return 节点完整数据

@@ -1,6 +1,5 @@
 package cn.chengzhimeow.ccyaml.configuration;
 
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,10 +75,12 @@ public class MemoryConfiguration implements ConfigurationSection {
         return set;
     }
 
+    @Override
     public @Nullable ConfigurationSection getParent() {
-        return parent;
+        return this.parent;
     }
 
+    @Override
     public @Nullable String getPath() {
         return this.path;
     }
