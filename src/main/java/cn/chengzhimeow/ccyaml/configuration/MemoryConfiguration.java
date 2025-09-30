@@ -1,10 +1,12 @@
 package cn.chengzhimeow.ccyaml.configuration;
 
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+@ToString(exclude = {"parent"})
 @SuppressWarnings("unused")
 public class MemoryConfiguration implements ConfigurationSection {
     private final @Nullable ConfigurationSection parent;
@@ -165,5 +167,13 @@ public class MemoryConfiguration implements ConfigurationSection {
 
         if (!deep) return Objects.requireNonNull(map).keySet();
         return MemoryConfiguration.getKeys(Objects.requireNonNull(map));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof MemoryConfiguration memoryConfiguration) {
+            return memoryConfiguration.data.equals(this.data);
+        }
+        return false;
     }
 }

@@ -76,10 +76,28 @@ public interface ConfigurationSection {
     }
 
     /**
+     * 获取块注释
+     *
+     * @return 注释列表
+     */
+    default @NotNull List<String> getCommentList() {
+        return this.getData().getCommentList();
+    }
+
+    /**
+     * 设定块注释 (在键值对上方)
+     *
+     * @param commentList 注释列表
+     */
+    default void setCommentList(@NotNull List<String> commentList) {
+        this.getData().setCommentList(commentList);
+    }
+
+    /**
      * 设定指定路径的行内注释
      *
      * @param path        路径
-     * @param commentList 行内注释列表
+     * @param commentList 注释列表
      */
     default void setInlineCommentList(@NotNull String path, @NotNull List<String> commentList) {
         this.getSectionData(path).setInlineCommentList(commentList);
@@ -89,10 +107,28 @@ public interface ConfigurationSection {
      * 获取指定路径的行内注释 (在键值对后方)
      *
      * @param path 路径
-     * @return 行内注释列表
+     * @return 注释列表
      */
     default @NotNull List<String> getInlineCommentList(@NotNull String path) {
         return this.getSectionData(path).getInlineCommentList();
+    }
+
+    /**
+     * 获取行内注释 (在键值对后方)
+     *
+     * @return 注释列表
+     */
+    default @NotNull List<String> getInlineCommentList() {
+        return this.getData().getInlineCommentList();
+    }
+
+    /**
+     * 设定行内注释
+     *
+     * @param commentList 注释列表
+     */
+    default void setInlineCommentList(@NotNull List<String> commentList) {
+        this.getData().setInlineCommentList(commentList);
     }
 
     /**
@@ -106,10 +142,24 @@ public interface ConfigurationSection {
     default @Nullable <T> T get(@NotNull String path, @NotNull Class<T> clazz) {
         Object data = this.getSectionData(path).getData();
         if (data == null) return null;
+
+        if (clazz != StringSection.class && data instanceof StringSection str) data = str.getValue();
         else if (clazz == String.class) {
-            if (data instanceof StringSectionData str) data = str.getValue();
-            else if (!(data instanceof String)) data = data.toString();
+            if (!(data instanceof String)) data = data.toString();
+        } else if (clazz == Long.class) {
+            if (data instanceof Integer v) data = v.longValue();
+        } else if (clazz == Integer.class) {
+            if (data instanceof Double v) data = v.intValue();
+        } else if (clazz == Short.class) {
+            if (data instanceof Integer v) data = v.shortValue();
+            else if (data instanceof Double v) data = v.shortValue();
+        } else if (clazz == Double.class) {
+            if (data instanceof Integer v) data = v.doubleValue();
+        } else if (clazz == Float.class) {
+            if (data instanceof Integer v) data = v.floatValue();
+            else if (data instanceof Double v) data = v.floatValue();
         }
+
         // noinspection unchecked
         return (T) data;
     }
@@ -154,6 +204,29 @@ public interface ConfigurationSection {
      */
     default @Nullable String getString(@NotNull String path) {
         return this.getString(path, null);
+    }
+
+    /**
+     * 获取指定路径的短整数值
+     *
+     * @param path 路径
+     * @param def  默认值
+     * @return 短整数值, 如果不存在则返回默认值
+     */
+    default @Nullable Short getShort(@NotNull String path, @Nullable Short def) {
+        Short value = this.get(path, Short.class);
+        return value != null ? value : def;
+    }
+
+    /**
+     * 获取指定路径的短整数值
+     *
+     * @param path 路径
+     * @return 短整数值, 如果不存在则返回 0
+     */
+    @SuppressWarnings("DataFlowIssue")
+    default short getShort(@NotNull String path) {
+        return this.getShort(path, (short) 0);
     }
 
     /**
@@ -286,9 +359,9 @@ public interface ConfigurationSection {
         if (list == null) return def;
         if (list.isEmpty()) return list;
 
-        if (clazz == String.class && list.get(0) instanceof StringSectionData)
+        if (clazz != StringSection.class && list.get(0) instanceof StringSection)
             return (List<T>) list.stream()
-                    .map(i -> ((StringSectionData) i).getValue())
+                    .map(i -> ((StringSection) i).getValue())
                     .toList();
 
         return list;
@@ -455,19 +528,13 @@ public interface ConfigurationSection {
      * @param path 路径
      * @return 配置节点列表
      */
-    @SuppressWarnings("rawtypes")
     default @NotNull List<ConfigurationSection> getConfigurationSectionList(@NotNull String path) {
-        List<Map> maps = this.getList(path, new ArrayList<>(), Map.class);
+        List<ConfigurationSection> maps = this.getList(path, new ArrayList<>(), ConfigurationSection.class);
         assert maps != null;
 
         List<ConfigurationSection> result = new ArrayList<>();
-        for (int i = 0; i < maps.size(); i++) {
-            Map map = maps.get(i);
-            if (map == null) continue;
-
-            MemoryConfiguration configuration = new MemoryConfiguration(this, this.getKey(path) + "." + i);
-            // noinspection unchecked
-            configuration.data = SectionData.fromMap(map);
+        for (ConfigurationSection configuration : maps) {
+            if (configuration == null) continue;
             result.add(configuration);
         }
         return result;

@@ -1,14 +1,18 @@
 package cn.chengzhimeow.ccyaml.configuration.yaml;
 
-import cn.chengzhimeow.ccyaml.configuration.StringSectionData;
+import cn.chengzhimeow.ccyaml.configuration.StringSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
 @SuppressWarnings("unused")
-public record YamlStringSectionData(
-        @NotNull ScalarNode value
-) implements StringSectionData {
+public class YamlStringSectionData extends StringSection {
+    private final @NotNull ScalarNode value;
+
+    public YamlStringSectionData(@NotNull ScalarNode value) {
+        this.value = value;
+    }
+
     @Override
     public @Nullable String getValue() {
         return this.value.getValue();
@@ -16,12 +20,5 @@ public record YamlStringSectionData(
 
     public @NotNull ScalarNode node() {
         return this.value;
-    }
-
-    @Override
-    public @NotNull String toString() {
-        String value = this.getValue();
-        if (value == null) return "null";
-        else return value;
     }
 }

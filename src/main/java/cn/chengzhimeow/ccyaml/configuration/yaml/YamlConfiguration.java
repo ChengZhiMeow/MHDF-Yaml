@@ -7,14 +7,15 @@ import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.comments.CommentLine;
 import org.yaml.snakeyaml.comments.CommentType;
-import org.yaml.snakeyaml.nodes.*;
+import org.yaml.snakeyaml.nodes.MappingNode;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("unused")
 public class YamlConfiguration extends MemoryConfiguration {
@@ -135,56 +136,13 @@ public class YamlConfiguration extends MemoryConfiguration {
     }
 
     /**
-     * 将 SnakeYAML 的 CommentLine 列表转换为字符串列表
-     *
-     * @param comments CommentLine 列表
-     * @return 字符串注释列表
-     */
-    public static @NotNull List<String> getCommentLines(List<CommentLine> comments) {
-        if (YamlConfiguration.isNotNullAndEmpty(comments)) return new ArrayList<>();
-
-        List<String> lines = new ArrayList<>();
-        for (CommentLine comment : comments) {
-            String line = comment.getValue();
-            // 如果不是空行, 则去除前导空格, 否则添加 null 以表示空行
-            lines.add(comment.getCommentType() != CommentType.BLANK_LINE ?
-                    (line.startsWith(" ") ? line.substring(1) : line) : null
-            );
-        }
-        return lines;
-    }
-
-    /**
-     * 将字符串注释列表转换为 SnakeYAML 的 CommentLine 列表
-     *
-     * @param comments    字符串注释列表
-     * @param commentType 注释类型 (BLOCK, IN_LINE)
-     * @return CommentLine 列表
-     */
-    public static @NotNull List<CommentLine> getCommentLines(@NotNull List<String> comments, @NotNull CommentType commentType) {
-        if (YamlConfiguration.isNotNullAndEmpty(comments)) return new ArrayList<>();
-
-        List<CommentLine> lines = new ArrayList<>();
-        for (String comment : comments) {
-            // null 或空字符串表示一个空行注释
-            lines.add(new CommentLine(
-                    null,
-                    null,
-                    comment == null ? "" : " " + comment,
-                    comment == null ? CommentType.BLANK_LINE : commentType
-            ));
-        }
-        return lines;
-    }
-
-    /**
      * 从 Reader 加载配置文件
      *
      * @param reader 配置文件读取实例
      */
     public void load(@NotNull Reader reader) {
         MappingNode node = (MappingNode) this.yaml.compose(reader);
-        if (node != null) this.data = this.mappingNodeToSectionData(node);
+        if (node != null) this.data = this.constructor.mappingNodeToSectionData(node);
     }
 
     /**
@@ -227,10 +185,10 @@ public class YamlConfiguration extends MemoryConfiguration {
         SectionData sectionData = this.data;
         assert sectionData.getData() != null;
         // noinspection unchecked
-        MappingNode node = this.mapToMappingNode((Map<String, SectionData>) sectionData.getData());
-        node.setBlockComments(YamlConfiguration.getCommentLines(sectionData.getCommentList(), CommentType.BLOCK));
-        node.setInLineComments(YamlConfiguration.getCommentLines(sectionData.getInlineCommentList(), CommentType.IN_LINE));
-        node.setEndComments(YamlConfiguration.getCommentLines(sectionData.getEndCommentList(), CommentType.BLOCK));
+        MappingNode node = this.representer.mapToMappingNode((Map<String, SectionData>) sectionData.getData());
+        node.setBlockComments(this.representer.getCommentLines(sectionData.getCommentList(), CommentType.BLOCK));
+        node.setInLineComments(this.representer.getCommentLines(sectionData.getInlineCommentList(), CommentType.IN_LINE));
+        node.setEndComments(this.representer.getCommentLines(sectionData.getEndCommentList(), CommentType.BLOCK));
 
         StringWriter stringWriter = new StringWriter();
         if (!YamlConfiguration.isNotNullAndEmpty(node.getBlockComments()) || !YamlConfiguration.isNotNullAndEmpty(node.getEndComments()) || !YamlConfiguration.isNotNullAndEmpty(node.getValue())) {
@@ -256,79 +214,11 @@ public class YamlConfiguration extends MemoryConfiguration {
     }
 
     /**
-     * 将 SnakeYAML 的 MappingNode 递归转换为 SectionData 结构
+     * 获取尾部块注释
      *
-     * @param root MappingNode 根节点
-     * @return 转换后的 SectionData
+     * @return 注释列表
      */
-    private @NotNull SectionData mappingNodeToSectionData(@Nullable MappingNode root) {
-        Map<String, SectionData> map = new LinkedHashMap<>();
-        if (root == null) return new SectionData(map);
-
-        this.constructor.flattenMapping(root);
-        for (NodeTuple tuple : root.getValue()) {
-            String keyString = String.valueOf(this.constructor.construct(tuple.getKeyNode()));
-            Node valueNode = tuple.getValueNode();
-
-            // 处理锚点
-            while (valueNode instanceof AnchorNode) {
-                valueNode = ((AnchorNode) valueNode).getRealNode();
-            }
-
-            SectionData sectionData;
-            if (valueNode instanceof MappingNode mappingNode)
-                sectionData = this.mappingNodeToSectionData(mappingNode);
-            else sectionData = new SectionData(this.constructor.construct(valueNode));
-
-            // 读取注释
-            sectionData.setCommentList(YamlConfiguration.getCommentLines(tuple.getKeyNode().getBlockComments()));
-            if (valueNode instanceof MappingNode || valueNode instanceof SequenceNode)
-                sectionData.setInlineCommentList(YamlConfiguration.getCommentLines(tuple.getKeyNode().getInLineComments()));
-            else sectionData.setInlineCommentList(YamlConfiguration.getCommentLines(valueNode.getInLineComments()));
-
-            map.put(keyString, sectionData);
-        }
-
-        SectionData data = new SectionData(map);
-        data.setCommentList(YamlConfiguration.getCommentLines(root.getBlockComments()));
-        data.setInlineCommentList(YamlConfiguration.getCommentLines(root.getInLineComments()));
-        data.setEndCommentList(YamlConfiguration.getCommentLines(root.getEndComments()));
-
-        return data;
-    }
-
-    /**
-     * 将包含 SectionData 的 Map 递归转换为 SnakeYAML 的 MappingNode
-     *
-     * @param map 包含 SectionData 的 Map
-     * @return 转换后的 MappingNode
-     */
-    private @NotNull MappingNode mapToMappingNode(@NotNull Map<String, SectionData> map) {
-        List<NodeTuple> tupleList = new ArrayList<>();
-
-        for (Map.Entry<String, SectionData> entry : map.entrySet()) {
-            Node keyNode = this.representer.represent(entry.getKey());
-            Node valueNode;
-
-            SectionData sectionData = entry.getValue();
-            Object data = sectionData.getData();
-            if (data instanceof Map<?, ?> v) // noinspection unchecked
-                valueNode = this.mapToMappingNode((Map<String, SectionData>) v);
-            else valueNode = this.representer.represent(data);
-
-            // 应用注释
-            List<String> commentList = sectionData.getCommentList();
-            if (commentList.isEmpty()) keyNode.setBlockComments(null);
-            else keyNode.setBlockComments(YamlConfiguration.getCommentLines(commentList, CommentType.BLOCK));
-
-            List<String> inlineCommentList = sectionData.getInlineCommentList();
-            if (valueNode instanceof MappingNode || valueNode instanceof SequenceNode)
-                keyNode.setInLineComments(YamlConfiguration.getCommentLines(inlineCommentList, CommentType.IN_LINE));
-            else valueNode.setInLineComments(YamlConfiguration.getCommentLines(inlineCommentList, CommentType.IN_LINE));
-
-            tupleList.add(new NodeTuple(keyNode, valueNode));
-        }
-
-        return new MappingNode(Tag.MAP, tupleList, DumperOptions.FlowStyle.BLOCK);
+    public @NotNull List<String> getEndCommentList() {
+        return this.getData().getEndCommentList();
     }
 }

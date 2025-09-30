@@ -2,7 +2,15 @@ package cn.chengzhimeow.ccyaml.configuration;
 
 import org.jetbrains.annotations.Nullable;
 
-@SuppressWarnings("unused")
-public interface StringSectionData {
-    @Nullable String getValue();
+public class StringSectionData extends StringSection {
+    private final @Nullable String value;
+
+    public StringSectionData(@Nullable String value) {
+        this.value = value;
+    }
+
+    @Override
+    public @Nullable String getValue() {
+        return this.value;
+    }
 }

@@ -2,16 +2,15 @@ package cn.chengzhimeow.ccyaml.configuration;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Setter
+@ToString
 @SuppressWarnings("unused")
 public class SectionData {
     private @Nullable Object data;
@@ -20,6 +19,7 @@ public class SectionData {
     private @NotNull List<String> endCommentList;
 
     public SectionData(@Nullable Object data) {
+        if (data instanceof String s) data = new StringSectionData(s);
         this.data = data;
         this.commentList = new ArrayList<>();
         this.inlineCommentList = new ArrayList<>();
@@ -43,7 +43,7 @@ public class SectionData {
             Object keyObj = entry.getKey();
             String key;
             if (keyObj instanceof String s) key = s;
-            else if (keyObj instanceof StringSectionData s) key = s.getValue();
+            else if (keyObj instanceof StringSection s) key = s.getValue();
             else continue;
 
             if (entry.getValue() instanceof SectionData value) dataMap.put(key, value);
@@ -53,5 +53,23 @@ public class SectionData {
         }
 
         return new SectionData(dataMap);
+    }
+
+    public void setData(@Nullable Object data) {
+        if (data instanceof SectionData value) this.data = value.data;
+        else if (data instanceof Map) // noinspection unchecked
+            this.data = SectionData.fromMap((Map<Object, Object>) data).data;
+        else this.data = data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        if (!(o instanceof SectionData target)) return false;
+        return Objects.equals(this.data, target.data) &&
+                this.commentList.equals(target.commentList) &&
+                this.inlineCommentList.equals(target.inlineCommentList) &&
+                this.endCommentList.equals(target.endCommentList);
     }
 }
